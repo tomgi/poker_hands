@@ -6,8 +6,7 @@ data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord)
 data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord)  
 data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
 type Kicker = Rank
-
-data Hand = TwoPairs (Rank, Rank) | Pair Rank | Kicker deriving (Show, Eq, Ord)  
+data Hand = TwoPairs (Rank, Rank) | Pair Rank | HighestCard Rank deriving (Show, Eq, Ord)  
 
 group2 :: Eq a => [a] -> [[a]]
 group2 [] = []
@@ -28,15 +27,19 @@ rankGroupsOf quantity cards = (map head pairs)
 		pairs = [x | x <- (group2 ranks), (length x) == quantity]
 		ranks = map rank cards
 
+highestCard :: [Card] -> Maybe Hand 
+highestCard = Just . HighestCard . rank . head . sort
+
 pair :: [Card] -> Maybe Hand
 pair cards = (single . (rankGroupsOf 2) $ cards) >>= (Just . Pair)
 
 twoPairs :: [Card] -> Maybe Hand
 twoPairs cards = (double . (rankGroupsOf 2) $ cards) >>= (Just . TwoPairs)
 
-identifyHand :: [Card] -> [Hand]
-identifyHand cards = catMaybes $ map ($ cards) [pair, twoPairs]
+identifyHand :: [Card] -> Hand
+identifyHand cards = head . sort $ hands
+	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs]
 
 main = do 
-	let cards = [(Card A Hearts), (Card K Diamonds), (Card A Diamonds), (Card K Spades)]
+	let cards = [(Card A Hearts), (Card Q Diamonds), (Card K Diamonds), (Card J Spades)]
 	print $ identifyHand cards
