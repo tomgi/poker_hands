@@ -8,10 +8,10 @@ data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)
 type Kicker = Rank
 data Hand = TwoPairs (Rank, Rank) | Pair Rank | HighestCard Rank deriving (Show, Eq, Ord)  
 
-group2 :: Eq a => [a] -> [[a]]
-group2 [] = []
-group2 [x] = [[x]]
-group2 (x:xs) = (x : [z | z <- xs, z == x]) : (group2 [z | z <- xs, z /= x])
+groupDuplicates :: Eq a => [a] -> [[a]]
+groupDuplicates [] = []
+groupDuplicates [x] = [[x]]
+groupDuplicates (x:xs) = (x : [z | z <- xs, z == x]) : (groupDuplicates [z | z <- xs, z /= x])
 
 single :: [a] -> Maybe a
 single [x] = Just x
@@ -24,7 +24,7 @@ double _ = Nothing
 rankGroupsOf :: Int -> [Card] -> [Rank]
 rankGroupsOf quantity cards = (map head pairs)
 	where
-		pairs = [x | x <- (group2 ranks), (length x) == quantity]
+		pairs = [x | x <- (groupDuplicates ranks), (length x) == quantity]
 		ranks = map rank cards
 
 highestCard :: [Card] -> Maybe Hand 
