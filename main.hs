@@ -6,7 +6,7 @@ data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord)
 data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord)  
 data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
 type Kicker = Rank
-data Hand = Set (Rank) | TwoPairs (Rank, Rank) | Pair Rank | HighestCard Rank deriving (Show, Eq, Ord)  
+data Hand = FourOfAKind (Rank) |ThreeOfAKind (Rank) | TwoPairs (Rank, Rank) | Pair Rank | HighestCard Rank deriving (Show, Eq, Ord)  
 
 groupDuplicates :: Eq a => [a] -> [[a]]
 groupDuplicates [] = []
@@ -36,13 +36,17 @@ pair cards = (single . (rankGroupsOf 2) $ cards) >>= (Just . Pair)
 twoPairs :: [Card] -> Maybe Hand
 twoPairs cards = (double . (rankGroupsOf 2) $ cards) >>= (Just . TwoPairs)
 
-set :: [Card] -> Maybe Hand
-set cards = (single . (rankGroupsOf 3) $ cards) >>= (Just . Set)
+threeOfAKind :: [Card] -> Maybe Hand
+threeOfAKind cards = (single . (rankGroupsOf 3) $ cards) >>= (Just . ThreeOfAKind)
+
+fourOfAKind :: [Card] -> Maybe Hand
+fourOfAKind cards = (single . (rankGroupsOf 4) $ cards) >>= (Just . FourOfAKind)
+
 
 identifyHand :: [Card] -> Hand
 identifyHand cards = head . sort $ hands
-	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, set]
+	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind]
 
 main = do 
-	let cards = [(Card A Hearts), (Card A Diamonds), (Card K Diamonds), (Card A Spades)]
+	let cards = [(Card A Hearts), (Card A Diamonds), (Card A Clubs), (Card A Spades)]
 	print $ identifyHand cards
