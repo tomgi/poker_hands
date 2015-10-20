@@ -6,7 +6,7 @@ data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord)
 data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord)  
 data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
 type Kicker = Rank
-data Hand = FullHouse (Rank, Rank) | FourOfAKind (Rank) |ThreeOfAKind (Rank) | TwoPairs (Rank, Rank) | Pair Rank | HighestCard Rank deriving (Show, Eq, Ord)  
+data Hand = Color (Suit) | FullHouse (Rank, Rank) | FourOfAKind (Rank) |ThreeOfAKind (Rank) | TwoPairs (Rank, Rank) | Pair Rank | HighestCard Rank deriving (Show, Eq, Ord)  
 
 groupDuplicates :: Eq a => [a] -> [[a]]
 groupDuplicates [] = []
@@ -45,10 +45,13 @@ twoPairs cards = (double . (rankGroupsOf 2) $ cards) >>= (Just . TwoPairs)
 fullHouse :: [Card] -> Maybe Hand
 fullHouse cards = (single (zip (rankGroupsOf 3 cards) (rankGroupsOf 2 cards))) >>= (Just . FullHouse)
 
+color :: [Card] -> Maybe Hand
+color cards = (single . nub . map suit $ cards) >>= (Just . Color)
+
 identifyHand :: [Card] -> Hand
 identifyHand cards = head . sort $ hands
-	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse]
+	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse, color]
 
 main = do 
-	let cards = [(Card A Hearts), (Card A Diamonds), (Card A Clubs), (Card K Spades), (Card K Clubs)]
+	let cards = [(Card A Hearts), (Card K Hearts), (Card Q Hearts), (Card J Hearts), (Card Ten Hearts)]
 	print $ identifyHand cards
