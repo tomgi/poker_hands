@@ -1,12 +1,16 @@
 import Data.List
 import Data.Maybe
+import Control.Applicative
 import Test.QuickCheck
 
 data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord)  
 data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord)  
 data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
 type Kicker = Rank
-data Hand = Color (Suit) | FullHouse (Rank, Rank) | FourOfAKind (Rank) |ThreeOfAKind (Rank) | TwoPairs (Rank, Rank) | Pair Rank | HighestCard Rank deriving (Show, Eq, Ord)  
+data Hand = Color (Suit) | FullHouse (Rank, Rank) | FourOfAKind (Rank) |ThreeOfAKind (Rank) | TwoPairs (Rank, Rank) | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord)  
+
+remove :: Eq a => a -> [a] -> [a]
+remove = filter . (/=)
 
 groupDuplicates :: Eq a => [a] -> [[a]]
 groupDuplicates [] = []
@@ -27,11 +31,14 @@ rankGroupsOf quantity cards = (map head pairs)
 		pairs = [x | x <- (groupDuplicates ranks), (length x) == quantity]
 		ranks = map rank cards
 
+highestRank :: [Card] -> Rank
+highestRank = rank . head . sort
+
 highestCard :: [Card] -> Maybe Hand 
-highestCard = Just . HighestCard . rank . head . sort
+highestCard = Just . HighestCard . highestRank
 
 pair :: [Card] -> Maybe Hand
-pair cards = (single . (rankGroupsOf 2) $ cards) >>= (Just . Pair)
+pair cards = (single . (rankGroupsOf 2) $ cards) >>= (\p -> (Just $ Pair p (head . sort $ remove p (map rank cards))))
 
 threeOfAKind :: [Card] -> Maybe Hand
 threeOfAKind cards = (single . (rankGroupsOf 3) $ cards) >>= (Just . ThreeOfAKind)
@@ -53,5 +60,5 @@ identifyHand cards = head . sort $ hands
 	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse, color]
 
 main = do 
-	let cards = [(Card A Hearts), (Card K Hearts), (Card Q Hearts), (Card J Hearts), (Card Ten Hearts)]
+	let cards = [(Card A Hearts), (Card A Clubs), (Card Nine Hearts), (Card J Hearts), (Card Ten Hearts)]
 	print $ identifyHand cards
