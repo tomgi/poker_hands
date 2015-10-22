@@ -7,7 +7,7 @@ data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord)
 data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord, Enum)  
 data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
 type Kicker = Rank
-data Hand = Street [Rank] | Color (Suit) | FullHouse (Rank, Rank) | FourOfAKind {ofRank :: (Rank), kicker :: Kicker} | ThreeOfAKind {ofRank :: (Rank), kicker :: Kicker} | TwoPairs {ofRanks :: (Rank, Rank), kicker:: Kicker } | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord)  
+data Hand = Flush [Rank] Suit | Street [Rank] | Color (Suit) | FullHouse (Rank, Rank) | FourOfAKind {ofRank :: (Rank), kicker :: Kicker} | ThreeOfAKind {ofRank :: (Rank), kicker :: Kicker} | TwoPairs {ofRanks :: (Rank, Rank), kicker:: Kicker } | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord)  
 
 rankOrder :: [Rank]
 rankOrder = [A .. Two] ++ [A]
@@ -67,10 +67,16 @@ street cards
 	| otherwise						= Nothing
 	where ranks = (sort $ map rank cards)
 
+flush :: [Card] -> Maybe Hand
+flush cards = do
+	(Color suit) <- color cards
+	(Street ranks) <- street cards
+	return $ Flush ranks suit
+
 identifyHand :: [Card] -> Hand
 identifyHand cards = head . sort $ hands
-	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse, color, street]
+	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse, color, street, flush]
 
 main = do 
-	let cards = [(Card A Hearts), (Card K Clubs), (Card Q Hearts), (Card J Hearts), (Card Ten Hearts)]
+	let cards = [(Card A Hearts), (Card K Hearts), (Card Q Hearts), (Card J Hearts), (Card Ten Hearts)]
 	print $ identifyHand cards
