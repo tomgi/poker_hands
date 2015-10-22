@@ -4,10 +4,13 @@ import Control.Applicative
 import Test.QuickCheck
 
 data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord)  
-data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord)  
+data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord, Enum)  
 data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
 type Kicker = Rank
-data Hand = Color (Suit) | FullHouse (Rank, Rank) | FourOfAKind (Rank) |ThreeOfAKind (Rank) | TwoPairs (Rank, Rank) | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord)  
+data Hand = Street [Rank] | Color (Suit) | FullHouse (Rank, Rank) | FourOfAKind (Rank) |ThreeOfAKind (Rank) | TwoPairs (Rank, Rank) | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard (Rank) deriving (Show, Eq, Ord)  
+
+rankOrder :: [Rank]
+rankOrder = [A .. Two] ++ [A]
 
 remove :: Eq a => a -> [a] -> [a]
 remove = filter . (/=)
@@ -55,10 +58,16 @@ fullHouse cards = (single (zip (rankGroupsOf 3 cards) (rankGroupsOf 2 cards))) >
 color :: [Card] -> Maybe Hand
 color cards = (single . nub . map suit $ cards) >>= (Just . Color)
 
+street :: [Card] -> Maybe Hand
+street cards
+	| isInfixOf ranks rankOrder 	= (Just . Street $ ranks)
+	| otherwise						= Nothing
+	where ranks = (sort $ map rank cards)
+
 identifyHand :: [Card] -> Hand
 identifyHand cards = head . sort $ hands
-	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse, color]
+	where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse, color, street]
 
 main = do 
-	let cards = [(Card A Hearts), (Card A Clubs), (Card Nine Hearts), (Card J Hearts), (Card Ten Hearts)]
+	let cards = [(Card A Hearts), (Card K Clubs), (Card Q Hearts), (Card J Hearts), (Card Ten Hearts)]
 	print $ identifyHand cards
