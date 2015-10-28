@@ -42,8 +42,8 @@ module Poker where
 	highestRank :: [Card] -> Rank
 	highestRank = rank . head . sort
 
-	highestCard :: [Card] -> Maybe Hand 
-	highestCard = Just . HighestCard . highestRank
+	highestCard :: [Card] -> Hand 
+	highestCard = HighestCard . highestRank
 
 	pair :: [Card] -> Maybe Hand
 	pair cards = (single . (rankGroupsOf 2) $ cards) >>= (\p -> (Just $ Pair p (head . sort $ remove p (map rank cards))))
@@ -79,5 +79,15 @@ module Poker where
 		return $ Flush ranks suit
 
 	identifyHand :: [Card] -> Hand
-	identifyHand cards = head . sort $ hands
-		where hands = catMaybes $ map ($ cards) [highestCard, pair, twoPairs, threeOfAKind, fourOfAKind, fullHouse, color, street, flush]
+	identifyHand cards = fromMaybe defaultHand possibleHands		
+		where 
+			defaultHand = highestCard cards
+			possibleHands = 
+				(flush cards) <|>
+				(street cards) <|>
+				(color cards) <|>
+				(fullHouse cards) <|>
+				(fourOfAKind cards) <|>
+				(threeOfAKind cards) <|> 
+				(twoPairs cards) <|> 
+				(pair cards)
