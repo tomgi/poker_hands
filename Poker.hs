@@ -1,4 +1,11 @@
-module Poker where
+module Poker (
+		Suit(..),
+		Rank(..),
+		Card(..),
+		Kicker(..),
+		Hand(..),
+		identifyHand
+	)where
 
 	import Data.List
 	import Data.Maybe
