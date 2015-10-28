@@ -9,7 +9,7 @@ module Poker where
 	data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord, Enum)  
 	data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
 	type Kicker = Rank
-	data Hand = Flush [Rank] Suit | Street [Rank] | Color (Suit) | FullHouse Rank Rank | FourOfAKind {ofRank :: (Rank), kicker :: Kicker} | ThreeOfAKind {ofRank :: (Rank), kicker :: Kicker} | TwoPairs {ofRanks :: (Rank, Rank), kicker:: Kicker } | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord)  
+	data Hand = StraightFlush [Rank] Suit | FourOfAKind {ofRank :: (Rank), kicker :: Kicker} | FullHouse Rank Rank | Flush (Suit) | Straight [Rank] | ThreeOfAKind {ofRank :: (Rank), kicker :: Kicker} | TwoPairs {ofRanks :: (Rank, Rank), kicker:: Kicker } | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord)  
 
 	rankOrder :: [Rank]
 	rankOrder = [A .. Two] ++ [A]
@@ -63,31 +63,31 @@ module Poker where
 		(ThreeOfAKind three _) <- threeOfAKind cards
 		return $ FullHouse three pair
 
-	color :: [Card] -> Maybe Hand
-	color cards = (single . nub . map suit $ cards) >>= (Just . Color)
+	flush :: [Card] -> Maybe Hand
+	flush cards = (single . nub . map suit $ cards) >>= (Just . Flush)
 
-	street :: [Card] -> Maybe Hand
-	street cards
-		| isInfixOf ranks rankOrder 	= (Just . Street $ ranks)
+	straight :: [Card] -> Maybe Hand
+	straight cards
+		| isInfixOf ranks rankOrder 	= (Just . Straight $ ranks)
 		| otherwise						= Nothing
 		where ranks = (sort $ map rank cards)
 
-	flush :: [Card] -> Maybe Hand
-	flush cards = do
-		(Color suit) <- color cards
-		(Street ranks) <- street cards
-		return $ Flush ranks suit
+	straightFlush :: [Card] -> Maybe Hand
+	straightFlush cards = do
+		(Flush suit) <- flush cards
+		(Straight ranks) <- straight cards
+		return $ StraightFlush ranks suit
 
 	identifyHand :: [Card] -> Hand
 	identifyHand cards = fromMaybe defaultHand possibleHands		
 		where 
 			defaultHand = highestCard cards
 			possibleHands = 
-				(flush cards) <|>
-				(street cards) <|>
-				(color cards) <|>
-				(fullHouse cards) <|>
+				(straightFlush cards) <|>
 				(fourOfAKind cards) <|>
+				(fullHouse cards) <|>
+				(flush cards) <|>
+				(straight cards) <|>
 				(threeOfAKind cards) <|> 
 				(twoPairs cards) <|> 
 				(pair cards)
