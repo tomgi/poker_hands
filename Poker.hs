@@ -45,14 +45,17 @@ module Poker where
 	highestCard :: [Card] -> Hand 
 	highestCard = HighestCard . highestRank
 
+	getKickerExceptRank :: Rank -> [Card] -> Kicker
+	getKickerExceptRank p cards = head . sort $ remove p (map rank cards)
+
 	pair :: [Card] -> Maybe Hand
-	pair cards = (single . (rankGroupsOf 2) $ cards) >>= (\p -> (Just $ Pair p (head . sort $ remove p (map rank cards))))
+	pair cards = (single . (rankGroupsOf 2) $ cards) >>= (\p -> Just $ Pair p $ getKickerExceptRank p cards)
 
 	threeOfAKind :: [Card] -> Maybe Hand
-	threeOfAKind cards = (single . (rankGroupsOf 3) $ cards) >>= (\t -> Just $ ThreeOfAKind t $ head . sort $ remove t (map rank cards))
+	threeOfAKind cards = (single . (rankGroupsOf 3) $ cards) >>= (\t -> Just $ ThreeOfAKind t $ getKickerExceptRank t cards)
 
 	fourOfAKind :: [Card] -> Maybe Hand
-	fourOfAKind cards = (single . (rankGroupsOf 4) $ cards) >>= (\f -> Just $ FourOfAKind f $ head . sort $ remove f (map rank cards))
+	fourOfAKind cards = (single . (rankGroupsOf 4) $ cards) >>= (\f -> Just $ FourOfAKind f $ getKickerExceptRank f cards)
 
 	twoPairs :: [Card] -> Maybe Hand
 	twoPairs cards = (double . (rankGroupsOf 2) $ cards) >>= (\ps -> (Just $ TwoPairs ps $ head . sort $ removeAll [fst ps, snd ps] (map rank cards)))
