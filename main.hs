@@ -3,5 +3,5 @@ module Main (main) where
 	import Poker
 
 	main = do 
-		let cards = [(Card A Hearts), (Card A Clubs), (Card A Spades), (Card J Hearts), (Card J Spades)]
+		let cards = HandCards (Card A Clubs) (Card Q Clubs) (Card J Clubs) (Card Ten Clubs) (Card K Clubs)
 		print $ identifyHand cards

@@ -3,6 +3,7 @@ module Poker (
 		Rank(..),
 		Card(..),
 		Kicker(..),
+		HandCards(..),
 		Hand(..),
 		identifyHand
 	)where
@@ -12,11 +13,12 @@ module Poker (
 	import Control.Applicative
 	import Test.QuickCheck
 
-	data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord)  
-	data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord, Enum)  
-	data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord)  
+	data Suit = Hearts | Diamonds | Spades | Clubs deriving (Show, Eq, Ord) 
+	data Rank = A | K | Q | J | Ten | Nine | Eight | Seven | Six | Five | Four | Three | Two deriving (Show, Eq, Ord, Enum) 
+	data Card = Card {rank :: Rank, suit :: Suit} deriving (Show, Eq, Ord) 
 	type Kicker = Rank
-	data Hand = StraightFlush [Rank] Suit | FourOfAKind {ofRank :: (Rank), kicker :: Kicker} | FullHouse Rank Rank | Flush (Suit) | Straight [Rank] | ThreeOfAKind {ofRank :: (Rank), kicker :: Kicker} | TwoPairs {ofRanks :: (Rank, Rank), kicker:: Kicker } | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord)  
+	data HandCards = HandCards Card Card Card Card Card
+	data Hand = StraightFlush [Rank] Suit | FourOfAKind {ofRank :: (Rank), kicker :: Kicker} | FullHouse Rank Rank | Flush (Suit) | Straight [Rank] | ThreeOfAKind {ofRank :: (Rank), kicker :: Kicker} | TwoPairs {ofRanks :: (Rank, Rank), kicker:: Kicker } | Pair {ofRank :: Rank,  kicker :: Kicker} | HighestCard Rank deriving (Show, Eq, Ord) 
 
 	rankOrder :: [Rank]
 	rankOrder = [A .. Two] ++ [A]
@@ -46,49 +48,52 @@ module Poker (
 			pairs = [x | x <- (groupDuplicates ranks), (length x) == quantity]
 			ranks = map rank cards
 
-	highestRank :: [Card] -> Rank
-	highestRank = rank . head . sort
+	toArray :: HandCards -> [Card]
+	toArray (HandCards a b c d e) = [a, b, c, d, e]
 
-	highestCard :: [Card] -> Hand 
+	highestRank :: HandCards -> Rank
+	highestRank = rank . head . sort . toArray
+
+	highestCard :: HandCards -> Hand 
 	highestCard = HighestCard . highestRank
 
-	getKickerExceptRank :: Rank -> [Card] -> Kicker
-	getKickerExceptRank p cards = head . sort $ remove p (map rank cards)
+	getKickerExceptRank :: Rank -> HandCards -> Kicker
+	getKickerExceptRank p cards = head . sort $ remove p (map rank (toArray cards))
 
-	pair :: [Card] -> Maybe Hand
-	pair cards = (single . (rankGroupsOf 2) $ cards) >>= (\p -> Just $ Pair p $ getKickerExceptRank p cards)
+	pair :: HandCards -> Maybe Hand
+	pair cards = (single . (rankGroupsOf 2) $ toArray cards) >>= (\p -> Just $ Pair p $ getKickerExceptRank p cards)
 
-	threeOfAKind :: [Card] -> Maybe Hand
-	threeOfAKind cards = (single . (rankGroupsOf 3) $ cards) >>= (\t -> Just $ ThreeOfAKind t $ getKickerExceptRank t cards)
+	threeOfAKind :: HandCards -> Maybe Hand
+	threeOfAKind cards = (single . (rankGroupsOf 3) $ toArray cards) >>= (\t -> Just $ ThreeOfAKind t $ getKickerExceptRank t cards)
 
-	fourOfAKind :: [Card] -> Maybe Hand
-	fourOfAKind cards = (single . (rankGroupsOf 4) $ cards) >>= (\f -> Just $ FourOfAKind f $ getKickerExceptRank f cards)
+	fourOfAKind :: HandCards -> Maybe Hand
+	fourOfAKind cards = (single . (rankGroupsOf 4) $ toArray cards) >>= (\f -> Just $ FourOfAKind f $ getKickerExceptRank f cards)
 
-	twoPairs :: [Card] -> Maybe Hand
-	twoPairs cards = (double . (rankGroupsOf 2) $ cards) >>= (\ps -> (Just $ TwoPairs ps $ head . sort $ removeAll [fst ps, snd ps] (map rank cards)))
+	twoPairs :: HandCards -> Maybe Hand
+	twoPairs cards = (double . (rankGroupsOf 2) $ toArray cards) >>= (\ps -> (Just $ TwoPairs ps $ head . sort $ removeAll [fst ps, snd ps] (map rank (toArray cards))))
 
-	fullHouse :: [Card] -> Maybe Hand
+	fullHouse :: HandCards -> Maybe Hand
 	fullHouse cards = do
 		(Pair pair _) <- pair cards
 		(ThreeOfAKind three _) <- threeOfAKind cards
 		return $ FullHouse three pair
 
-	flush :: [Card] -> Maybe Hand
-	flush cards = (single . nub . map suit $ cards) >>= (Just . Flush)
+	flush :: HandCards -> Maybe Hand
+	flush cards = (single . nub . map suit . toArray $ cards) >>= (Just . Flush)
 
-	straight :: [Card] -> Maybe Hand
+	straight :: HandCards -> Maybe Hand
 	straight cards
 		| isInfixOf ranks rankOrder 	= (Just . Straight $ ranks)
 		| otherwise						= Nothing
-		where ranks = (sort $ map rank cards)
+		where ranks = (sort $ map rank (toArray cards))
 
-	straightFlush :: [Card] -> Maybe Hand
+	straightFlush :: HandCards -> Maybe Hand
 	straightFlush cards = do
 		(Flush suit) <- flush cards
 		(Straight ranks) <- straight cards
 		return $ StraightFlush ranks suit
 
-	identifyHand :: [Card] -> Hand
+	identifyHand :: HandCards -> Hand
 	identifyHand cards = fromMaybe defaultHand possibleHands		
 		where 
 			defaultHand = highestCard cards
